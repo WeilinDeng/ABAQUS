@@ -1,0 +1,109 @@
+*Heading
+** Job name: Job-1 Model name: Model-1
+**
+** PARTS
+**
+*Part, name=Part-1
+*End Part
+**
+** ASSEMBLY
+**
+*Assembly, name=Assembly
+**  
+*Instance, name=Part-1-1, part=Part-1
+** add cohesive nodes and elements
+*USER ELEMENT, TYPE=U1, NODES=4, COORDINATES=2, PROPERTIES=2
+1,2
+*NODE
+      7,           0.,           1.
+      8,           1.,           1.
+*ELEMENT, TYPE=U1
+3, 7, 8, 5, 2
+*ELSET, ELSET=CZ
+3
+*UEL PROPERTY, ELSET=CZ
+100, 0.01, 0.01, 1, 0
+*Node
+      1,           0.,           2.
+      2,           0.,           1.
+      3,           0.,           0.
+      4,           1.,           2.
+      5,           1.,           1.
+      6,           1.,           0.
+*Element, type=CPS4R
+1, 1, 2, 5, 4
+**2, 2, 3, 6, 5
+2, 7, 3, 6, 8
+** Region: (Section-1:Picked)
+*Elset, elset=_I1, internal
+ 1, 2
+** Section: Section-1
+*Solid Section, elset=_I1, material=Material-1
+1.,
+*End Instance
+*Nset, nset=_PickedSet4, internal, instance=Part-1-1
+ 1, 2, 3, 4, 5, 6, 7, 8
+*Nset, nset=_PickedSet5, internal, instance=Part-1-1
+ 3, 6,
+*Nset, nset=_PickedSet6, internal, instance=Part-1-1
+ 1, 4
+*Elset, elset=_PickedSet6, internal, instance=Part-1-1
+ 1,
+*Nset, nset=_PickedSet7, internal, instance=Part-1-1
+ 2, 7
+*End Assembly
+** 
+** MATERIALS
+** 
+*Material, name=Material-1
+*Elastic
+ 3640, 0.3
+** 
+** BOUNDARY CONDITIONS
+** 
+** Name: BC-1 Type: Displacement/Rotation
+*Boundary
+_PickedSet4, 1, 1
+_PickedSet4, 6, 6
+** Name: BC-2 Type: Displacement/Rotation
+*Boundary
+_PickedSet5, 2, 2
+** Name: BC-3 Type: Displacement/Rotation
+*Boundary
+_PickedSet6, 2, 2
+** ----------------------------------------------------------------
+** 
+** STEP: Step-1
+** 
+*Step, name=Step-1
+***Static, direct=no stop
+**0.01, 1., 
+*Static
+0.01, 1., 0.000001, 0.1
+** 
+** BOUNDARY CONDITIONS
+** 
+** Name: BC-3 Type: Displacement/Rotation
+*Boundary
+_PickedSet6, 2, 2, 0.1
+** 
+** OUTPUT REQUESTS
+** 
+*Restart, write, frequency=1
+** 
+** FIELD OUTPUT: F-Output-1
+** 
+*Output, field, variable=PRESELECT
+** 
+** HISTORY OUTPUT: H-Output-1
+** 
+*Output, history
+*Node Output, nset=_PickedSet6
+U2
+*Node Output, nset=_PickedSet7
+U2
+*Element Output, elset=_PickedSet6
+S22
+*El Print, freq=999999
+*Node Print, freq=999999
+*End Step
