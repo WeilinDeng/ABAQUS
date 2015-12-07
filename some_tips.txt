@@ -1,0 +1,21 @@
+Change the path in cmd:
+  to the top: > cd\
+  to drive:> E:
+  to folder: > cd folder name
+
+Run abaqus inp files:
+  > abaqus double job=job1 cpus=4 int
+ terminate job
+  > abaqus terminate job=job1 int
+
+Run abaqus user subroutines:
+  > abaqus double user=subroutine.for input=inpfile job=job1 -inter
+  
+Change the display options of ODB:
+  - Viewport > Viewport Annotation Options 
+  - file > Save Display Options
+ Show boundary conditions in ODB:
+  - ODB　options
+ Turn off mesh:
+  - Options > Common > Visible Edges > No edges
+  
