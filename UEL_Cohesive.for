@@ -238,11 +238,11 @@ C	ZETA is the fictitious viscosity used to regularize the instability
 C		problem. In our papere, \zeta_n is ZETA*PROPS(1) here. Simply
 C		setting ZETA=0.D0 (or delete the following three lines
 C		gives the standard Xu-Needleman model.
-    if (dtime>0.d0) then
-      ZETA=0.0001D0
+      if (dtime>0.d0) then
+          ZETA=0.0001D0
 	  TRACT(1)=TRACT(1)+ZETA*PROPS(1)*VGAP(1)/DN
 	  DTDGAP(1,1)=DTDGAP(1,1)+ZETA*PROPS(1)/DN/DTIME
-    endif
+      endif
 C
       RETURN
       END
