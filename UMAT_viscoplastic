@@ -1,0 +1,140 @@
+C   RUN in the ABAQUS command:
+C     > abaqus double user=umat_viscoplastic.for 
+C       input=user_material_viscoplastic.inp job=job1 -inter
+C   ABAQUS subroutine for viscoplastic
+C
+C =================== SUBROUTINE UMAT  ========================
+      SUBROUTINE UMAT(STRESS,STATEV,DDSDDE,SSE,SPD,SCD,
+     1 RPL,DDSDDT,DRPLDE,DRPLDT,
+     2 STRAN,DSTRAN,TIME,DTIME,TEMP,DTEMP,PREDEF,DPRED,CMNAME,
+     3 NDI,NSHR,NTENS,NSTATV,PROPS,NPROPS,COORDS,DROT,PNEWDT,
+     4 CELENT,DFGRD0,DFGRD1,NOEL,NPT,LAYER,KSPT,KSTEP,KINC)
+!
+      INCLUDE 'ABA_PARAM.INC'
+!     WARNING - the aba_param.inc file declares
+!        Implicit real*8(a-h,o-z)
+!     This means that, by default, any variables with
+!     first letter between a-h or o-z are double precision.
+!     The rest are integers.
+!     Note that this also means that if you type a variable
+!     name incorrectly, the compiler won't catch your typo.
+!
+      
+      CHARACTER*80 CMNAME
+      DIMENSION STRESS(NTENS),STATEV(NSTATV),
+     1 DDSDDE(NTENS,NTENS),DDSDDT(NTENS),DRPLDE(NTENS),
+     2 STRAN(NTENS),DSTRAN(NTENS),TIME(2),PREDEF(1),DPRED(1),
+     3 PROPS(NPROPS),COORDS(3),DROT(3,3),DFGRD0(3,3),DFGRD1(3,3)
+
+!      user coding to define DDSDDE, STRESS, STATEV, SSE, SPD, SCD
+!      and, if necessary, RPL, DDSDDT, DRPLDE, DRPLDT, PNEWDT
+!
+!     Local variables    
+      double precision :: E,xnu,Y,e0,n,edot0,m
+      double precision :: de(3,3), deps(3,3), S_n(3,3), 
+     +                      sigma_n(3,3), sigma_np1(3,3)
+      double precision :: delta(3,3), deltaVec(6), S_star(3,3),
+     +                      S_starVec(6),sigma_star, gamma, epse_n
+      double precision :: skk,dekk,tempmat1(6,6),
+     +                      tempmat2(6,6),tempmat3(6,6)
+	integer i,j
+
+      ddsdde = 0.d0
+
+      E = props(1)
+	xnu = props(2)
+	Y = props(3)
+	e0 = props(4)
+	n = props(5)
+	edot0 = props(6)
+	m = props(7)
+	
+      delta = reshape((/ 1.D0, 0.D0, 0.D0, 
+     +                   0.D0, 1.D0, 0.D0, 
+     +                   0.D0, 0.D0, 1.D0 /), shape(delta))	
+      sigma_n = reshape((/STRESS(1), STRESS(4), STRESS(5), 
+     +            STRESS(4), STRESS(2), STRESS(6), 
+     +            STRESS(5), STRESS(6), STRESS(3) /), shape(sigma_n))
+	deps = reshape((/DSTRAN(1), DSTRAN(4), DSTRAN(5), 
+     +            DSTRAN(4), DSTRAN(2), DSTRAN(6), 
+     +            DSTRAN(5), DSTRAN(6), DSTRAN(3) /), shape(deps))
+	skk = sigma_n(1,1)+sigma_n(2,2)+sigma_n(3,3)
+	dekk = deps(1,1)+deps(2,2)+deps(3,3)
+	epse_n = statev(1)
+	S_n = sigma_n - skk*delta/3.d0
+	de = deps - dekk*delta/3.d0
+	S_star = S_n + E/(1.d0+xnu)*de
+	sigma_star = dsqrt(1.5d0*sum(S_star*S_star))	
+	
+      tempmat1 = 0.d0
+      do i=1,3
+          tempmat1(i,i) = 1.d0
+          tempmat1(i+3,i+3) = 0.5d0
+      enddo
+      S_starVec = (/S_star(1,1), S_star(2,2), S_star(3,3),
+     +              S_star(1,2), S_star(1,3), S_star(2,3)/)
+      deltaVec = (/1.d0, 1.d0, 1.d0, 0.d0, 0.d0, 0.d0/)
+      tempmat2 = spread(deltaVec,dim=2,ncopies=6)*
+     +              spread(deltaVec,dim=1,ncopies=6)
+      tempmat3 = spread(S_starVec,dim=2,ncopies=6)*
+     +              spread(S_starVec,dim=1,ncopies=6)
+      
+      if (sigma_star < 1.0d-12) then
+          ddsdde = E/(1.d0+xnu)*tempmat1 + 
+     +              E*xnu/(1.d0+xnu)/(1.d0-2.d0*xnu)*tempmat2
+          STRESS = 0.d0
+          statev(1) = 0.d0
+      else
+	    call NRloop(dee,epse_n,E,xnu,Y,e0,n,edot0,m,sigma_star,dtime)
+      	  sigma_np1 = (1.d0-1.5d0*E*dee/sigma_star/(1+xnu))*S_star + 
+     +                     (skk+E*dekk/(1.d0-2.d0*xnu))*delta/3.d0
+	    gamma = 1.5d0*E/(1.d0+xnu)/sigma_star + 
+     +	          (1.d0-1.5d0*E*dee/(1.d0+xnu)/sigma_star)*
+     +               (1.d0/n/(e0+epse_n+dee)+1.d0/m/dee)
+          ddsdde = E/(1.d0+xnu)*(1.d0-1.5d0*dee/(1.d0+xnu)/sigma_star)*
+     +        (tempmat1-1.d0/3*tempmat2)+
+     +        E/(1.d0+xnu)*9*E*(dee-1.d0/gamma)/4/(1.d0+xnu)/sigma_star*
+     +        tempmat3/sigma_star**2+E/3.d0/(1.d0-2.d0*xnu)*tempmat2
+          STRESS = (/sigma_np1(1,1), sigma_np1(2,2), sigma_np1(3,3),
+     +               sigma_np1(1,2), sigma_np1(1,3), sigma_np1(2,3)/)
+          statev(1) = epse_n + dee
+      endif
+      
+      
+!    for debugging, you can use
+!      write(6,*) ' Hello '
+!    Output is then written to the .dat file
+	
+
+      RETURN
+      END
+      
+      
+      
+      subroutine NRloop(dee,epse_n,E,xnu,Y,e0,n,edot0,m,
+     +                   sigma_star,dtime)
+      
+      implicit none
+      double precision :: E,xnu,Y,e0,n,edot0,m
+      double precision :: dee, epse_n,sigma_star,dtime
+      double precision :: f, dfddee, dx, err, tol
+      integer i, iter, maxiter
+      
+      err = 1.d0
+      tol = 1.d-12
+      dee = 0.d0
+      iter = 0
+      do while (err > tol)
+            f = sigma_star - Y*(1.d0+ (epse_n+dee)/e0 )**(1.d0/n)*
+     +          (dee/dtime/edot0)**(1.d0/m) - 1.5d0*E*dee/(1+xnu)
+            dfddee = -Y/n/e0*(1.d0+ (epse_n+dee)/e0 )**(1.d0/n-1.d0)*
+     +             (dee/dtime/edot0)**(1.d0/m)- 
+     +             Y/m/dtime/edot0*(1.d0+ (epse_n+dee)/e0 )**(1.d0/n)*
+     +             (dee/dtime/edot0)**(1.d0/m-1.d0)-1.5d0*E/(1+xnu)
+            dx = -f/dfddee
+            err = abs(dx)
+            dee = dee + dx   
+            iter = iter + 1   
+      enddo
+      write(6,'(A20,i2)') 'NRLOOP interations:' , iter
+      end subroutine NRloop
