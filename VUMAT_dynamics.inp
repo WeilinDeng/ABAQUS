@@ -1,0 +1,138 @@
+*HEADING
+  Strain rate jump up test
+**  
+*Parameter
+** history control parameters
+log=-3
+v=10**log
+vUp=10*v
+MSF=1.0+1.0E6*(0.1/v)**2
+StepTime1=0.06/v
+StepTime2=0.06/vUp
+** material parameters
+** parameters for S-C and AFB model
+** FTD: factor to shrink critical aging time td (FTD=1 for td without changing)
+p=1.15  
+Lamda=2.07
+n=3.0
+FTD=1.0 
+** parameters for Original S-C and AFB model,  AA5083, room temperature
+c=0.046
+T=298
+rho_m_sat=5.075E14
+EBar=1.55
+** parameters for updated S-C and AFB model,  AA5083, room temperature 
+**c=0.046
+**T=298
+**rho_m_sat=4.74E14
+**EBar=0.65
+** Parameters for McCormick Model, AA5083, toom temperature
+SlowFactor = 0.01 # slowing factor, beta in Modified_MCCormick_beta.f or alpha in Modified_MCCormick_alpha.f
+Ep0=v # strain rate for stable status, not necessary when SlowFactor near to 1
+*NODE
+1,0,0,0
+2,1,0,0
+3,1,1,0
+4,0,1,0
+5,0,0,1
+6,1,0,1
+7,1,1,1
+8,0,1,1
+*NSET,nset=top
+5,6,7,8
+*nset,nset=bot
+1,2,3,4
+*nset,nset=FY
+1,2,5,6
+*nset,nset=FX
+1,4,5,8
+*element,type=C3D8R,elset=block
+1,1,2,3,4,5,6,7,8
+*solid section,elset=block,material=DSA_AA5083T25_D
+1.,
+**
+** MATERIAL
+**
+** Pure elastic model
+*material,name=Elastic
+*density
+2.7E-9
+*elastic
+68431.1,0.347
+**
+** Model for S-C or AFB model
+*material,name=DSA_AA5083T25_D
+*density
+2.7E-9
+*user material,constants=43
+      1,         36,   3.8E13,       1.5,      <n>,    <rho_m_sat>,<EBar>,     6.3E-4
+    3.0,        <p>,      <T>,   29573.3,       14,      0.347,    0.2851,        2.1
+    0.1,        <c>,      3.0,      0.97,     0.13,       0.56,       7.5,    <Lamda>
+    4.0,      <FTD>,      300,      0.50,        2,     1.E-30,      0.05,      1.E-4
+   0.50,       0.05,        0,         0,       0,          0,         1,       1.E4
+    1.0,       2.E4,      1.0
+*DEPVAR
+ 909, 
+**
+** Model for McCormick model
+*material,name=DSA_AA5083T25_MB_D
+*density
+2.7E-9
+*user material,constants=15
+ 70.e3,0.3,78.7,2.23,27.9,0.336,0.02,8.8
+ 219,1386,15.9,1.e-8,1.e-4,<SlowFactor>,<Ep0>
+*DEPVAR
+ 5, 
+*INITIAL CONDITIONS,TYPE=VELOCITY
+top,2,<v>
+*BOUNDARY
+bot,3,3
+FY,2,2
+FX,1,1
+**
+** Step-1
+**
+*STEP,NLGEOM=YES
+*DYNAMIC,EXPLICIT
+,<StepTime1>
+*Fixed Mass Scaling, factor=<MSF>
+*boundary,type=velocity
+top,3,3,<v>
+****
+*OUTPUT, FIELD, TIME MARKS=YES, NUMBER INTERVAL=10
+*ELEMENT OUTPUT
+PEEQ,S,LE
+*NODE OUTPUT
+U,
+*OUTPUT, History, Frequency=1
+*ELEMENT OUTPUT,ELSET=block
+s33,LE33,MISES,ERP3
+SDV902,SDV903,SDV904,SDV905,SDV906,SDV907,SDV908,SDV909
+*ENERGY OUTPUT, VAR=PRESELECT 
+*File Output,number interval=1
+*El FILE
+SDV,
+*END STEP
+**
+** step-2
+**
+*STEP,NLGEOM=YES
+*DYNAMIC,EXPLICIT
+,<StepTime2>
+*boundary,type=velocity
+top,3,3,<vUp>
+****
+*OUTPUT, FIELD, TIME MARKS=YES, NUMBER INTERVAL=10
+*ELEMENT OUTPUT
+PEEQ,S,LE
+*NODE OUTPUT
+U,
+*OUTPUT, History, Frequency=1
+*ELEMENT OUTPUT,ELSET=block
+s33,LE33,MISES,ERP3
+SDV902,SDV903,SDV904,SDV905,SDV906,SDV907,SDV908,SDV909
+*ENERGY OUTPUT, VAR=PRESELECT 
+*File Output,number interval=1
+*El FILE
+SDV,
+*END STEP
