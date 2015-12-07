@@ -23,7 +23,7 @@ c	p0=stateOld(kb,1)
 c	ta0=stateOld(kb,2)
 c
 cccccccccccccccccccccccccccccccccccccccccccccc
-  subroutine vumat(
+      subroutine vumat(
 C Read only (unmodifiable)variables -
      1  nblock, ndir, nshr, nstatev, nfieldv, nprops, lanneal,
      2  stepTime, totalTime, dt, cmname, coordMp, charLength,
@@ -34,7 +34,7 @@ C Read only (unmodifiable)variables -
 C Write only (modifiable) variables -
      7  stressNew, stateNew, enerInternNew, enerInelasNew )
 C
-  include 'vaba_param.inc'
+      include 'vaba_param.inc'
 c	IMPLICIT DOUBLE PRECISION (A-H,O-Z)
 C
       dimension props(nprops), density(nblock), coordMp(nblock,*),
@@ -51,7 +51,7 @@ C
      1  stressNew(nblock,ndir+nshr), stateNew(nblock,nstatev),
      2  enerInternNew(nblock), enerInelasNew(nblock)
 C
-  character*80 cmname
+      character*80 cmname
 C
 c  Local variables	
 	INTEGER nds,kb
@@ -63,20 +63,20 @@ c	WRITE(*,*) 'VUMAT',TotalTime !debug
 	IF (TotalTime>0) THEN 
 	  DO kb=1,nblock
 c	    WRITE(*,*) 'Normal,kb=',kb !debug
-	CALL TimeInc(nblock,nstatev,ndir,nshr,nds,kb,nprops,
+		CALL TimeInc(nblock,nstatev,ndir,nshr,nds,kb,nprops,
 	1     props,stateOld,stateNew,stressOld,stressNew,strainInc,
-  2     dt,StepTime,TotalTime,EIOld,EInEOld,EINew,EInENew,density)
+     2     dt,StepTime,TotalTime,EIOld,EInEOld,EINew,EInENew,density)
 	  END DO
 	ELSE ! initialize
 	  DO kb=1,nblock
 c	    WRITE(*,*) 'Initial,kb=',kb !debug
-  CALL Initial(nblock,nstatev,ndir,nshr,nds,kb,nprops,
+		CALL Initial(nblock,nstatev,ndir,nshr,nds,kb,nprops,
 	1     props,stateOld,stateNew,stressOld,stressNew,strainInc,
-  2     dt,StepTime,TotalTime,EIOld,EInEOld,EINew,EInENew,density)
+     2     dt,StepTime,TotalTime,EIOld,EInEOld,EINew,EInENew,density)
 	  END DO
 	END IF
-  RETURN
-  END
+      RETURN
+      END
 c
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
